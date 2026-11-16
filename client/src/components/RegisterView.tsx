@@ -50,7 +50,6 @@ const handleSubmit = async (e) => {
         confirmPassword: "",
         terms: false
       });
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       setError(data.data.message || 'Registration failed');
       setSuccess('');
@@ -67,7 +66,7 @@ const handleSubmit = async (e) => {
   }
 };
 
-  let handleChange = (e)=>{
+  let handleChange = (e: React.ChangeEvent<HTMLInputElement>)=>{
     setFormData({
       ...formData,
       [e.target.name]: e.target.name == "terms" ? !formData.terms : e.target.value

@@ -27,29 +27,28 @@ let loginController = async (req, res) => {
         let normalizedEmail = email.trim();
 
         // Find existing user with matching email and password
-        let user = await User.findOne({ 
-            email: { $regex: new RegExp(`^${normalizedEmail}$`, 'i') },
-            password: password 
+        let user = await User.findOne({
+            email: normalizedEmail,
+            password: password
         });
 
         if (!user) {
-            let emailExists = await User.findOne({ 
-                email: { $regex: new RegExp(`^${normalizedEmail}$`, 'i') } 
+            let emailExists = await User.findOne({
+                email: normalizedEmail
             });
-
+        
             if (!emailExists) {
                 return res.status(404).json({
                     success: false,
                     message: "User not found"
                 });
             }
-
+        
             return res.status(401).json({
                 success: false,
                 message: "Invalid password"
             });
         }
-
         // Nodemailer configuration
         const transporter = nodemailer.createTransport({
             service: "gmail",

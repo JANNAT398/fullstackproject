@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AuthPage } from '../types';
 import { authService } from '../services/authService';
 import { ShieldAlert, Lock, Eye, EyeOff, CheckCircle2, ArrowRight, ArrowLeft } from 'lucide-react';
+import axios from 'axios';
 
 interface ResetPasswordViewProps {
   email: string;
@@ -51,7 +52,14 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
 
     try {
       setLoading(true);
-      await authService.resetPassword(targetEmail, code.trim(), newPassword);
+      const data = await axios.post(
+        'http://localhost:5000/registration',
+        ({
+          email,
+          newPassword,
+          confirmPassword
+        })
+      );
       setIsSuccess(true);
     } catch (err: unknown) {
       // In demo mode if user not found, treat as successful for testing UX
@@ -119,30 +127,7 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
               />
             </div>
 
-            {/* Reset Code */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-semibold text-slate-700">
-                  6-Digit Reset Code
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setCode('123456')}
-                  className="text-[11px] font-semibold text-indigo-600 hover:underline"
-                >
-                  Fill Demo (123456)
-                </button>
-              </div>
-              <input
-                type="text"
-                required
-                maxLength={6}
-                value={code}
-                onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, ''))}
-                placeholder="123456"
-                className="w-full px-3 py-2.5 text-sm font-mono tracking-wider text-center bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
-              />
-            </div>
+
 
             {/* New Password */}
             <div>

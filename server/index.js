@@ -10,6 +10,7 @@ const mongodbConnect = require('./config/mongodbConfig');
 
 const { registrationController } = require('./controllers/authentiCation');
 const  {loginController}  = require('./controllers/loginController')
+const  {resetController}  = require('./controllers/resetController')
 const User = require('./models/schemaModels');
 
 app.use(express.json());
@@ -19,6 +20,7 @@ app.use(cors());
 mongodbConnect();
 
 app.post('/login', loginController);
+app.post('/reset',resetController)
 // Multer Storage Configuration
 const storage = multer.diskStorage({
 

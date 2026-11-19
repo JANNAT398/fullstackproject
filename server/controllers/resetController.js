@@ -6,7 +6,7 @@ let pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 let resetController = async (req, res) => {
     try {
 
-        let { email, newPassword,confirmPassword } = req.body;
+        let { email, newPassword, confirmPassword } = req.body;
 
         // Check empty fields
         if (!email || !newPassword || !confirmPassword) {
@@ -26,31 +26,32 @@ let resetController = async (req, res) => {
 
         let normalizedEmail = email.trim();
 
-        // Find existing user with matching email and password
+        // Find User
         let user = await User.findOne({
-            email: normalizedEmail,
-            newPassword: newPassword,
-            confirmPassword:confirmPassword
+            email: normalizedEmail
         });
 
         if (!user) {
-            let emailExists = await User.findOne({
-                email: normalizedEmail
-            });
-        
-            if (!emailExists) {
-                return res.status(404).json({
-                    success: false,
-                    message: "User not found"
-                });
-            }
-        
-            return res.status(401).json({
+            return res.status(404).json({
                 success: false,
-                message: "Invalid password"
+                message: "User not found"
             });
         }
-        // Nodemailer configuration
+
+        // Password Match
+        if (newPassword !== confirmPassword) {
+            return res.status(400).json({
+                success: false,
+                message: "Password does not match"
+            });
+        }
+
+        // Update Password
+        user.password = newPassword;
+
+        await user.save();
+
+        // Nodemailer Configuration
         const transporter = nodemailer.createTransport({
             service: "gmail",
             auth: {
@@ -59,33 +60,29 @@ let resetController = async (req, res) => {
             }
         });
 
-        // Send Login Notification
+        // Send Email
         try {
             await transporter.sendMail({
-                from: '"EcoBazaar" <islamjanat956@gmail.com>',
+                from: process.env.EMAIL_USER,
                 to: user.email,
-                subject: "New Login Notification - EcoBazaar",
+                subject: "Password Changed Successfully - EcoBazaar",
                 html: `
                     <h2>Hello ${user.fullname || 'User'}!</h2>
-                    <h3>Login Successful!</h3>
-                    <p>Your EcoBazaar account has been logged in successfully.</p>
+                    <h3>Password Changed Successfully!</h3>
+                    <p>Your EcoBazaar account password has been changed.</p>
                     <p>If this wasn't you, please secure your account.</p>
-                    <p>Thank you for using EcoBazaar!</p>
                     <h3>EcoBazaar Team 💚</h3>
                 `
             });
+
         } catch (emailErr) {
-            console.log("Email notification error:", emailErr.message);
+            console.log("Email error:", emailErr.message);
         }
 
-        res.status(200).json({
+        // Final Response
+        return res.status(200).json({
             success: true,
-            message: "Login successful",
-            user: {
-                id: user._id,
-                name: user.fullname,
-                email: user.email
-            }
+            message: "Password reset successful"
         });
 
     } catch (error) {

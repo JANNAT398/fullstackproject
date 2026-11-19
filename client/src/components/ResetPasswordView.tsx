@@ -52,21 +52,31 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
 
     try {
       setLoading(true);
+  
       const data = await axios.post(
-        'http://localhost:5000/registration',
-        ({
-          email,
-          newPassword,
-          confirmPassword
-        })
+          'http://localhost:5000/reset',
+          {
+              email: targetEmail,
+              newPassword,
+              confirmPassword
+          }
       );
+  
       setIsSuccess(true);
-    } catch (err: unknown) {
-      // In demo mode if user not found, treat as successful for testing UX
-      setIsSuccess(true);
-    } finally {
+  
+  } catch (err: unknown) {
+  
+      if (axios.isAxiosError(err)) {
+          setError(
+              err.response?.data?.message || "Something went wrong"
+          );
+      } else {
+          setError("Something went wrong");
+      }
+  
+  } finally {
       setLoading(false);
-    }
+  }
   };
 
   return (

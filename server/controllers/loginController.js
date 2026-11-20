@@ -1,5 +1,6 @@
 const nodemailer = require("nodemailer");
 const User = require('../models/schemaModels');
+const jwt = require('jsonwebtoken');
 
 let pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -17,7 +18,7 @@ let loginController = async (req, res) => {
         }
 
         // Email validation
-        if (!pattern.test(email)) {
+        if (!pattern.test(email.trim())) {
             return res.status(400).json({
                 success: false,
                 message: "Please enter a valid email"
@@ -26,42 +27,57 @@ let loginController = async (req, res) => {
 
         let normalizedEmail = email.trim();
 
-        // Find existing user with matching email and password
+        // Find user
         let user = await User.findOne({
-            email: normalizedEmail,
-            password: password
+            email: normalizedEmail
         });
 
         if (!user) {
-            let emailExists = await User.findOne({
-                email: normalizedEmail
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
             });
-        
-            if (!emailExists) {
-                return res.status(404).json({
-                    success: false,
-                    message: "User not found"
-                });
-            }
-        
+        }
+
+        // Check password
+        if (user.password !== password) {
             return res.status(401).json({
                 success: false,
                 message: "Invalid password"
             });
         }
+
+        // Generate Access Token
+        const accessToken = jwt.sign(
+            { id: user._id },
+            process.env.SECRET_KEY,
+            {
+                expiresIn: "1d"
+            }
+        );
+
+        // Generate Refresh Token
+        const refreshToken = jwt.sign(
+            { id: user._id },
+            process.env.SECRET_KEY,
+            {
+                expiresIn: "30d"
+            }
+        );
+
         // Nodemailer configuration
         const transporter = nodemailer.createTransport({
             service: "gmail",
             auth: {
-               user:'islamjanat956@gmail.com',
-               pass:'zpcsiuhgvoigqkei',
-            }
+                user:'islamjanat956@gmail.com',
+                pass:'zpcsiuhgvoigqkei',
+             }
         });
 
         // Send Login Notification
         try {
             await transporter.sendMail({
-                from: '"EcoBazaar" <islamjanat956@gmail.com>',
+                from: `"EcoBazaar" <${process.env.EMAIL_USER}>`,
                 to: user.email,
                 subject: "New Login Notification - EcoBazaar",
                 html: `
@@ -69,29 +85,46 @@ let loginController = async (req, res) => {
                     <h3>Login Successful!</h3>
                     <p>Your EcoBazaar account has been logged in successfully.</p>
                     <p>If this wasn't you, please secure your account.</p>
-                    <p>Thank you for using EcoBazaar!</p>
                     <h3>EcoBazaar Team 💚</h3>
                 `
             });
+
         } catch (emailErr) {
             console.log("Email notification error:", emailErr.message);
         }
 
-        res.status(200).json({
-            success: true,
-            message: "Login successful",
-            user: {
-                id: user._id,
-                name: user.fullname,
-                email: user.email
-            }
-        });
+        // Cookie Options
+        const option = {
+            httpOnly: true,
+            secure: false,
+            sameSite: "lax"
+        };
+
+        // Send Response
+        return res.status(200)
+            .cookie("accessToken", accessToken, {
+                ...option,
+                maxAge: 1000 * 60 * 60 * 24
+            })
+            .cookie("refreshToken", refreshToken, {
+                ...option,
+                maxAge: 1000 * 60 * 60 * 24 * 30
+            })
+            .json({
+                success: true,
+                message: "Login successful",
+                user: {
+                    id: user._id,
+                    name: user.fullname,
+                    email: user.email
+                }
+            });
 
     } catch (error) {
 
-        console.log(error);
+        console.log("Login Error:", error);
 
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: error.message
         });

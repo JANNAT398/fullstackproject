@@ -41,6 +41,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
       const res = await axios.post('http://localhost:5000/login', {
         email: email.trim(),
         password: password
+      },{
+        withCredentials:true
       });
 
       if (res.data.success) {

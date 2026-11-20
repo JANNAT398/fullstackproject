@@ -7,6 +7,7 @@ const app = express();
 
 const securityMaintain = require('./middleware/security');
 const mongodbConnect = require('./config/mongodbConfig');
+const cookieParser = require('cookie-parser')
 
 const { registrationController } = require('./controllers/authentiCation');
 const  {loginController}  = require('./controllers/loginController')
@@ -14,7 +15,14 @@ const  {resetController}  = require('./controllers/resetController')
 const User = require('./models/schemaModels');
 
 app.use(express.json());
-app.use(cors());
+app.use(
+    cors({
+    origin:'http://localhost:3000',
+    credentials:true
+})
+);
+app.use(cookieParser());
+
 
 // MongoDB Connection
 mongodbConnect();
